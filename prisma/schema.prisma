@@ -1,0 +1,264 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  fullName  String
+  role      Role     @default(USER)
+  isActive  Boolean  @default(true)
+  apiKey    String?  @unique
+  lastLoginAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  devices   Device[]
+  messages  Message[]
+  tasks     Task[]
+  licenses  License[]
+  webhooks  Webhook[]
+  logs      Log[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model Device {
+  id          String   @id @default(cuid())
+  userId      String
+  phoneNumber String   @unique
+  deviceName  String
+  deviceType  DeviceType
+  status      DeviceStatus @default(INACTIVE)
+  isConnected Boolean  @default(false)
+  batteryLevel Int?
+  isCharging  Boolean  @default(false)
+  lastSeen    DateTime?
+  qrCode      String?
+  sessionData Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+  tasks   Task[]
+
+  @@map("devices")
+}
+
+model Message {
+  id          String        @id @default(cuid())
+  userId      String
+  deviceId    String?
+  taskId      String?
+  phoneNumber String
+  messageType MessageType
+  content     String?
+  mediaUrl    String?
+  status      MessageStatus @default(PENDING)
+  direction   MessageDirection
+  isRead      Boolean       @default(false)
+  readAt      DateTime?
+  deliveredAt DateTime?
+  error       String?
+  metadata    Json?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device Device? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  task   Task?  @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@map("messages")
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  userId      String
+  deviceId    String?
+  type        TaskType
+  priority    Int        @default(5)
+  status      TaskStatus @default(PENDING)
+  data        Json
+  result      Json?
+  error       String?
+  scheduledAt DateTime?
+  executedAt  DateTime?
+  completedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device  Device?   @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  messages Message[]
+
+  @@map("tasks")
+}
+
+model License {
+  id           String       @id @default(cuid())
+  userId       String
+  licenseKey   String       @unique
+  type         LicenseType
+  status       LicenseStatus @default(ACTIVE)
+  deviceLimit  Int
+  messageLimit Int?
+  expiresAt    DateTime
+  features     Json?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("licenses")
+}
+
+model Webhook {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  url       String
+  events    String[]
+  isActive  Boolean  @default(true)
+  secret    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("webhooks")
+}
+
+model Log {
+  id        String   @id @default(cuid())
+  userId    String?
+  level     LogLevel
+  message   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("logs")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean  @default(false)
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// Enums
+enum Role {
+  ADMIN
+  MANAGER
+  USER
+}
+
+enum DeviceType {
+  NORMAL
+  BUSINESS
+}
+
+enum DeviceStatus {
+  ACTIVE
+  INACTIVE
+  BANNED
+  DISCONNECTED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  LOCATION
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum MessageDirection {
+  INCOMING
+  OUTGOING
+}
+
+enum TaskType {
+  MESSAGE
+  MEDIA
+  GROUP_JOIN
+  GROUP_LEAVE
+  GROUP_MESSAGE
+  BULK_MESSAGE
+}
+
+enum TaskStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum LicenseType {
+  TRIAL
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+enum LicenseStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  SUSPENDED
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
