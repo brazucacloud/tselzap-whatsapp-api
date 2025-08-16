@@ -6,7 +6,7 @@ services:
     image: postgres:15-alpine
     container_name: whatsapp-automation-db
     environment:
-      POSTGRES_DB: whatsapp_automation
+      POSTGRES_DB: tselzap
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
@@ -45,14 +45,14 @@ services:
     container_name: whatsapp-automation-api
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/whatsapp_automation
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/tselzap
       REDIS_URL: redis://redis:6379
       JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
       JWT_EXPIRES_IN: 24h
-      PORT: 3000
-      FRONTEND_URL: http://localhost:3001
+      PORT: 3001
+      FRONTEND_URL: http://localhost:3000
     ports:
-      - "3000:3000"
+      - "3001:3001"
     volumes:
       - ./logs:/app/logs
       - ./uploads:/app/uploads
@@ -72,9 +72,9 @@ services:
       dockerfile: Dockerfile
     container_name: whatsapp-automation-frontend
     environment:
-      REACT_APP_API_URL: http://localhost:3000/api/v1
+      REACT_APP_API_URL: http://localhost:3001/api/v1
     ports:
-      - "3001:3000"
+      - "3000:3000"
     depends_on:
       - api
     networks:
@@ -88,7 +88,7 @@ services:
     container_name: whatsapp-automation-worker
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/whatsapp_automation
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/tselzap
       REDIS_URL: redis://redis:6379
       JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
     depends_on:
